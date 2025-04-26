@@ -1,0 +1,54 @@
+{
+    "Life": {
+      "High": [
+        "My pet hamster has stage fright.",
+        "Aliens abducted my charger!",
+        "I thought it was a leap year."
+      ],
+      "Medium": [
+        "I overslept because my alarm clock didn’t go off.",
+        "My Wi-Fi was acting up.",
+        "I lost track of time while napping."
+      ],
+      "Low": [
+        "I forgot my keys at home.",
+        "The traffic was crazy today.",
+        "My dog ate my homework (again)."
+      ]
+    },
+    "Work": {
+      "High": [
+        "The server crashed because of a coffee spill.",
+        "I accidentally emailed my boss a meme.",
+        "I got caught in a traffic jam caused by a parade."
+      ],
+      "Medium": [
+        "My computer froze at the worst time.",
+        "The internet went out for a few minutes.",
+        "I lost track of time during a meeting."
+      ],
+      "Low": [
+        "I misread the meeting time.",
+        "I didn’t get enough coffee this morning.",
+        "My lunch break ran long."
+      ]
+    },
+    "School/College": {
+      "High": [
+        "My Wi-Fi was down while I was studying.",
+        "I had a mental breakdown about my homework.",
+        "I got locked out of the library."
+      ],
+      "Medium": [
+        "I couldn't focus due to a loud student.",
+        "I mixed up my assignment deadlines.",
+        "My laptop crashed during the presentation."
+      ],
+      "Low": [
+        "I forgot to charge my laptop.",
+        "I was running late because I couldn’t find my pen.",
+        "My notebook fell apart during class."
+      ]
+    }
+  }
+  
