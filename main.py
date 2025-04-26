@@ -80,10 +80,13 @@ class ExcuseScreen(Screen):
         layout.add_widget(self.home_button)
         
         self.add_widget(layout)
-        
+
+    def on_enter(self):
+        # This is called when the screen is fully loaded and entered
         self.generate_new_excuse()
 
     def generate_new_excuse(self, instance=None):
+        # Retrieve the selected category and sensitivity from the HomeScreen
         category = self.manager.get_screen('home').category
         sensitivity = self.manager.get_screen('home').sensitivity
         sensitivity_levels = ["Low", "Medium", "High"]
