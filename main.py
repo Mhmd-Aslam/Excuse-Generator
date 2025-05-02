@@ -161,7 +161,6 @@ class HomeScreen(Screen):
             background_color=[0.4, 0.7, 0.4, 1],
             height=scale_size(55))
         
-        # Add shadow animation
         with btn.canvas.before:
             Color(0, 0, 0, 0.1)
             btn.shadow = RoundedRectangle(
@@ -293,7 +292,6 @@ class ExcuseScreen(Screen):
         self._generate_new_excuse()
 
     def _generate_new_excuse(self, instance=None):
-        # Restore text fade animation
         anim = Animation(opacity=0, duration=0.2)
         anim += Animation(opacity=1, duration=0.2)
         anim.start(self.excuse_input)
@@ -309,10 +307,25 @@ class ExcuseApp(App):
     def build(self):
         self.title = 'Excuse Generator'
         self.icon = 'assets/applogo.png'
-        sm = ScreenManager()
-        sm.add_widget(HomeScreen(name='home'))
-        sm.add_widget(ExcuseScreen(name='excuse'))
-        return sm
+        self.sm = ScreenManager()
+        self.sm.add_widget(HomeScreen(name='home'))
+        self.sm.add_widget(ExcuseScreen(name='excuse'))
+        
+        if platform == 'android':
+            from kivy.base import EventLoop
+            EventLoop.window.bind(on_keyboard=self.on_keyboard)
+            
+        return self.sm
+
+    def on_keyboard(self, window, key, *args):
+        if key == 27:  # Android back button
+            if self.sm.current == 'home':
+                App.get_running_app().stop()
+                return True
+            elif self.sm.current == 'excuse':
+                self.sm.current = 'home'
+                return True
+        return False
 
 if __name__ == "__main__":
     ExcuseApp().run()
