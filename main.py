@@ -1,11 +1,14 @@
 import kivy
 import os
+import html
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
 from kivy.uix.slider import Slider
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, RoundedRectangle
@@ -13,6 +16,8 @@ from kivy.properties import ListProperty, StringProperty
 from kivy.animation import Animation
 from kivy.metrics import dp, sp
 from kivy.utils import platform
+from kivy.core.clipboard import Clipboard
+from kivy.clock import Clock
 import random
 import json
 
@@ -30,8 +35,23 @@ else:
 
 def load_excuses():
     data_path = os.path.join(os.path.dirname(__file__), 'excuses.json')
-    with open(data_path, 'r') as f:
-        return json.load(f)
+    with open(data_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return decode_special_chars(data)
+
+def decode_special_chars(data):
+    """Handle special characters and apostrophes"""
+    decoded = {}
+    for category, levels in data.items():
+        decoded[category] = {}
+        for level, excuses in levels.items():
+            decoded[category][level] = [
+                html.unescape(e)
+                .replace("’", "'")
+                .replace("‘", "'")
+                for e in excuses
+            ]
+    return decoded
 
 excuses_data = load_excuses()
 
@@ -50,6 +70,7 @@ class PlatformAwareRoundedButton(Button):
         self.size_hint_y = None
         self.height = dp(50) if platform == 'android' else dp(45)
         self.padding = (dp(10), dp(10))
+        self.font_name = 'Roboto'
 
     def on_press(self):
         anim = Animation(background_color=[c * 0.8 for c in self.background_color[:3]] + [1],
@@ -112,7 +133,7 @@ class OptimizedHomeScreen(Screen):
         
         self.category_dropdown = DropDown()
         self.category_button = PlatformAwareRoundedButton(
-            text="Life",
+            text="School/College",
             background_color=[0.4, 0.6, 0.9, 1])
         self.category_button.bind(on_release=self.category_dropdown.open)
         
@@ -223,44 +244,107 @@ class OptimizedExcuseScreen(Screen):
             size_hint_y=None,
             height=dp(45)))
         
+        # Add settings display
+        layout.add_widget(self._create_settings_display())
         layout.add_widget(self._create_excuse_card())
         layout.add_widget(self._create_action_buttons())
         return layout
 
+    def _create_settings_display(self):
+        self.settings_label = Label(
+            text="",
+            font_size=sp(14) if platform == 'android' else dp(14),
+            color=[1, 1, 1, 0.7],  # Semi-transparent white
+            size_hint_y=None,
+            height=dp(20))
+        return self.settings_label
+
     def _create_excuse_card(self):
-        card = BoxLayout(orientation='vertical', size_hint_y=0.6)
-        with card.canvas.before:
-            Color(1, 1, 1, 0.2)
-            RoundedRectangle(size=card.size, pos=card.pos, radius=[dp(15)])
+        card = FloatLayout(size_hint_y=0.6)
         
-        self.excuse_label = Label(
+        with card.canvas.before:
+            Color(0, 0, 0, 1)
+            self.card_bg = RoundedRectangle(
+                size=card.size,
+                pos=card.pos,
+                radius=[dp(15)]
+            )
+        card.bind(pos=self._update_card_bg, size=self._update_card_bg)
+
+        self.excuse_input = TextInput(
             text=self.excuse_text,
+            size_hint=(0.9, None),
+            height=dp(150),
+            pos_hint={'center_x': 0.5, 'top': 0.7},  # Adjusted Y position
             font_size=sp(18) if platform == 'android' else dp(20),
-            color=[1, 1, 1, 1],
+            foreground_color=[1, 1, 1, 1],
             halign='center',
-            valign='middle',
-            text_size=(None, None),
-            padding=(dp(10), dp(10)))
-        self.excuse_label.bind(size=self.excuse_label.setter('text_size'))
-        card.add_widget(self.excuse_label)
+            padding=(dp(10), dp(10)),
+            readonly=True,
+            background_color=[0, 0, 0, 1],
+            cursor_color=[1, 1, 1, 0.5],
+            multiline=True
+        )
+        card.add_widget(self.excuse_input)
         return card
 
+    def _update_card_bg(self, instance, value):
+        self.card_bg.size = instance.size
+        self.card_bg.pos = instance.pos
+
     def _create_action_buttons(self):
-        box = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_y=None, height=dp(110))
+        box = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_y=None, height=dp(190))
         
+        # Watermark Label
+        box.add_widget(Label(
+            text="developed by Mhmd-Aslam",
+            font_size=sp(12) if platform == 'android' else dp(12),
+            color=[1, 1, 1, 0.5],
+            size_hint_y=None,
+            height=dp(20)))
+        
+        # Copy to Clipboard Button
+        copy_btn = PlatformAwareRoundedButton(
+            text="Copy to Clipboard",
+            background_color=[0.5, 0.7, 0.9, 1])
+        copy_btn.bind(on_release=self._copy_to_clipboard)
+        box.add_widget(copy_btn)
+        
+        # Try Again Button
         retry_btn = PlatformAwareRoundedButton(
             text="Try Again",
             background_color=[0.3, 0.5, 0.8, 1])
         retry_btn.bind(on_release=self._generate_new_excuse)
+        box.add_widget(retry_btn)
         
+        # Main Menu Button
         home_btn = PlatformAwareRoundedButton(
             text="Main Menu",
             background_color=[0.8, 0.3, 0.3, 1])
         home_btn.bind(on_release=self._return_home)
-        
-        box.add_widget(retry_btn)
         box.add_widget(home_btn)
+        
         return box
+
+    def _copy_to_clipboard(self, instance):
+        if self.excuse_input.text.strip():
+            Clipboard.copy(self.excuse_input.text)
+            original_text = instance.text
+            instance.text = "Copied!"
+            instance.background_color = [0.2, 0.8, 0.2, 1]
+            Clock.schedule_once(
+                lambda dt: self._reset_button(instance, original_text), 1
+            )
+        else:
+            instance.text = "Nothing to copy!"
+            instance.background_color = [0.8, 0.2, 0.2, 1]
+            Clock.schedule_once(
+                lambda dt: self._reset_button(instance, "Copy to Clipboard"), 1
+            )
+
+    def _reset_button(self, button, text):
+        button.text = text
+        button.background_color = [0.5, 0.7, 0.9, 1]
 
     def _update_background(self, *args):
         self.rect.size = self.size
@@ -272,18 +356,26 @@ class OptimizedExcuseScreen(Screen):
     def _generate_new_excuse(self, instance=None):
         anim = Animation(opacity=0, duration=0.2)
         anim += Animation(opacity=1, duration=0.2)
-        anim.start(self.excuse_label)
+        anim.start(self.excuse_input)
         home_screen = self.manager.get_screen('home')
         category = home_screen.category
         sensitivity = home_screen.sensitivity
-        level = ["Low", "Medium", "High"][sensitivity]
-        self.excuse_label.text = random.choice(excuses_data[category][level])
+        
+        # Update settings display
+        levels = ["Low", "Medium", "High"]
+        self.settings_label.text = f"Category: {category} | Sensitivity: {levels[sensitivity]}"
+        
+        level = levels[sensitivity]
+        self.excuse_input.text = random.choice(excuses_data[category][level])
 
     def _return_home(self, instance):
         self.manager.current = 'home'
 
 class OptimizedExcuseApp(App):
     def build(self):
+        self.title = 'Excuse Generator'
+        self.icon = 'assets/applogo.png'
+        
         sm = ScreenManager()
         sm.add_widget(OptimizedHomeScreen(name='home'))
         sm.add_widget(OptimizedExcuseScreen(name='excuse'))
