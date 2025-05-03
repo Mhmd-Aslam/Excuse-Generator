@@ -69,9 +69,9 @@ python main.py
 3. Click **Generate Excuse**  
 
 ### On the Excuse Screen:
-- Click **Copy** to copy the excuse  
-- Click **Generate New** to get another excuse  
-- Click **Back** to return to the main menu  
+- Click **Copy to Clipboard** to copy the excuse  
+- Click **Try Again** to get another excuse  
+- Click **Main Menu** to return to the main menu  
 
 ---
 
