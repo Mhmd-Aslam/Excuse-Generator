@@ -28,7 +28,7 @@ if platform == 'android':
     from android.permissions import request_permissions, Permission
     request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE])
     Window.softinput_mode = 'below_target'
-    FONT_SIZE_MULTIPLIER = 0.85
+    FONT_SIZE_MULTIPLIER = 1
 else:
     Window.size = (400, 700)
     FONT_SIZE_MULTIPLIER = 1
@@ -38,7 +38,7 @@ def scale_font(base_size):
     return sp(base_size * FONT_SIZE_MULTIPLIER) if platform == 'android' else dp(base_size)
 
 def scale_size(base_size):
-    return dp(base_size * (0.9 if platform == 'android' else 1))
+    return dp(base_size * (1 if platform == 'android' else 1))
 
 def load_excuses():
     data_path = os.path.join(os.path.dirname(__file__), 'excuses.json')
@@ -59,7 +59,7 @@ excuses_data = load_excuses()
 
 class AdaptiveButton(Button):
     background_color = ListProperty([0.2, 0.6, 0.8, 1])
-    border_radius = ListProperty([15 if platform == 'android' else 25])
+    border_radius = ListProperty([25 if platform == 'android' else 25])
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
