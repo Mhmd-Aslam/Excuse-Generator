@@ -19,13 +19,12 @@ requirements =
 android.api = 33
 android.minapi = 21
 android.ndk = 23b
-android.sdk = 24
 android.archs = arm64-v8a
 osx.python_version = 3
 osx.kivy_version = 2.1.0
 android.enable_androidx = True
 android.allow_backup = False
-p4a.branch = 2023.08.04
+p4a.branch = master
 android.add_src = ./kivy-options.txt
 android.permissions = 
     READ_EXTERNAL_STORAGE,
