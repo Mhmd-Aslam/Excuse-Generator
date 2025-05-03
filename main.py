@@ -21,7 +21,7 @@ from kivy.clock import Clock
 import random
 import json
 
-kivy.require('2.3.0')
+kivy.require('2.1.0')
 
 # Platform configuration
 if platform == 'android':
