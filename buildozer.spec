@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,json,kv,ttf
 version = 1.0
 requirements = 
     python3,
-    kivy==2.1.0,
+    kivy==2.3.0,
     android,
     pyjnius,
     openssl,
@@ -17,9 +17,8 @@ requirements =
 # Android specific configurations
 android.api = 33
 android.minapi = 21
-android.ndk = 23b
-android.sdk = 26
-android.archs = arm64-v8a
+android.ndk = 25b
+android.archs = arm64-v8a,armeabi-v7a
 osx.python_version = 3
 osx.kivy_version = 2.1.0
 android.enable_androidx = True
