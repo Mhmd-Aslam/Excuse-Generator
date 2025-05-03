@@ -13,12 +13,12 @@ requirements =
     android,
     pyjnius,
     openssl,
-    kivy.garden
 
 # Android specific configurations
 android.api = 33
 android.minapi = 21
 android.ndk = 23b
+android.sdk = 26
 android.archs = arm64-v8a
 osx.python_version = 3
 osx.kivy_version = 2.1.0
@@ -39,9 +39,9 @@ icon.filename = assets/applogo.png
 
 # Build optimization
 [buildozer]
-log_level = 1
+log_level = 2
 warn_on_root = 1
-android.accept_sdk_license = true
+android.accept_sdk_license = True
 android.skip_build_check = True
 
 # Kivy configuration
