@@ -240,11 +240,32 @@ class ExcuseScreen(Screen):
             multiline=True,
             padding=(scale_size(10), scale_size(10)),
             halign='center',
-            unfocus_on_touch=True,  # Native unfocus behavior
-            write_tab=False
+            unfocus_on_touch=True
+        )
+        self.excuse_input.bind(
+            focus=self._on_focus_change,
+            touch_down=self._schedule_selection_clear
         )
         card.add_widget(self.excuse_input)
         return card
+
+    def _on_focus_change(self, instance, value):
+        if not value:
+            self._clear_selection()
+
+    def _schedule_selection_clear(self, instance, touch):
+        Clock.schedule_once(lambda dt: self._check_selection_clear(touch), 0)
+
+    def _check_selection_clear(self, touch):
+        if not self.excuse_input.collide_point(*touch.pos):
+            self._clear_selection()
+
+    def _clear_selection(self):
+        self.excuse_input.selection_start = 0
+        self.excuse_input.selection_end = 0
+        if platform == 'android':
+            from kivy.base import EventLoop
+            self.excuse_input._hide_handles(EventLoop.window)
 
     def _create_action_buttons(self):
         box = BoxLayout(orientation='vertical', spacing=scale_size(10), 
@@ -294,6 +315,7 @@ class ExcuseScreen(Screen):
         self._generate_new_excuse()
 
     def _generate_new_excuse(self, instance=None):
+        self._clear_selection()
         anim = Animation(opacity=0, duration=0.2)
         anim += Animation(opacity=1, duration=0.2)
         anim.start(self.excuse_input)
@@ -304,7 +326,6 @@ class ExcuseScreen(Screen):
         
         self.settings_label.text = f"Category: {category} | Sensitivity: {levels[sensitivity]}"
         self.excuse_input.text = random.choice(excuses_data[category][levels[sensitivity]])
-        self.excuse_input.focus = False  # Ensure no focus after update
 
 class ExcuseApp(App):
     def build(self):
