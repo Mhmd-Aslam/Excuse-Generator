@@ -6,7 +6,7 @@ package.name = excuseapp
 package.domain = com.mhmdaslam
 source.dir = .
 source.include_exts = py,png,jpg,json,kv,ttf
-version = 3.0
+version = 3.2
 requirements = 
     python3,
     kivy==2.3.0,

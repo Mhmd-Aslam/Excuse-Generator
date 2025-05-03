@@ -66,7 +66,7 @@ class PlatformAwareRoundedButton(Button):
         self.font_size = sp(18) if platform == 'android' else dp(18)
         self.bold = True
         self.size_hint_y = None
-        self.height = dp(45) if platform == 'android' else dp(45)
+        self.height = dp(50) if platform == 'android' else dp(45)
         self.padding = (dp(10), dp(10))
         self.font_name = 'Roboto'
 
@@ -103,7 +103,7 @@ class OptimizedHomeScreen(Screen):
         # Title
         layout.add_widget(Label(
             text="Excuse Generator",
-            font_size=sp(28) if platform == 'android' else dp(28),
+            font_size=sp(30) if platform == 'android' else dp(30),
             bold=True,
             color=[0.2, 0.3, 0.5, 1],
             size_hint_y=None,
@@ -158,7 +158,7 @@ class OptimizedHomeScreen(Screen):
             value=1,
             step=1,
             size_hint_y=None,
-            height=dp(30) if platform == 'android' else dp(30))
+            height=dp(35) if platform == 'android' else dp(30))
         self.sensitivity_slider.bind(value=self._update_sensitivity)
         
         box.add_widget(self.sensitivity_label)
@@ -170,7 +170,7 @@ class OptimizedHomeScreen(Screen):
             text="Generate Excuse",
             background_color=[0.4, 0.7, 0.4, 1],
             size_hint_y=None,
-            height=dp(45) if platform == 'android' else dp(45))
+            height=dp(55) if platform == 'android' else dp(45))
         
         with btn.canvas.before:
             Color(0, 0, 0, 0.1)
@@ -241,7 +241,7 @@ class OptimizedExcuseScreen(Screen):
             size_hint_y=None,
             height=dp(45)))
         
-        # Settings display (new addition)
+        # Settings display
         layout.add_widget(self._create_settings_display())
         
         # Excuse Card with proportional height
@@ -253,17 +253,15 @@ class OptimizedExcuseScreen(Screen):
         return layout
 
     def _create_settings_display(self):
-        # Subtle settings display
         self.settings_label = Label(
             text="",
             font_size=sp(14) if platform == 'android' else dp(14),
-            color=[1, 1, 1, 0.7],  # Semi-transparent white
+            color=[1, 1, 1, 0.7],
             size_hint_y=None,
             height=dp(20))
         return self.settings_label
 
     def _create_excuse_card(self):
-        # Card takes 60% of available vertical space
         card = BoxLayout(orientation='vertical', size_hint_y=0.6)
         with card.canvas.before:
             Color(1, 1, 1, 0.2)
@@ -271,11 +269,11 @@ class OptimizedExcuseScreen(Screen):
         
         self.excuse_label = Label(
             text=self.excuse_text,
-            font_size=sp(20) if platform == 'android' else dp(20),
+            font_size=sp(21) if platform == 'android' else dp(21),
             color=[1, 1, 1, 1],
             halign='center',
             valign='middle',
-            text_size=(self.width - dp(20), None),  # Fixed width for text wrapping
+            text_size=(self.width - dp(20), None),
             padding=(dp(10), dp(10)),
             font_name='Roboto',
             markup=True
@@ -285,14 +283,12 @@ class OptimizedExcuseScreen(Screen):
         return card
 
     def _create_action_buttons(self):
-        # Fixed height button container
         box = BoxLayout(
             orientation='vertical',
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(170))  # Fixed total height for buttons
+            height=dp(170))
             
-        # Watermark
         box.add_widget(Label(
             text="developed by Mhmd-Aslam",
             font_size=sp(12) if platform == 'android' else dp(12),
@@ -300,7 +296,6 @@ class OptimizedExcuseScreen(Screen):
             size_hint_y=None,
             height=dp(20)))
         
-        # Buttons with fixed heights
         copy_btn = PlatformAwareRoundedButton(
             text="Copy to Clipboard",
             background_color=[0.5, 0.7, 0.9, 1],
@@ -365,7 +360,6 @@ class OptimizedExcuseScreen(Screen):
         levels = ["Low", "Medium", "High"]
         level = levels[sensitivity]
         
-        # Update settings display
         self.settings_label.text = f"Category: {category} | Sensitivity: {level}"
         self.excuse_label.text = random.choice(excuses_data[category][level])
 
@@ -380,7 +374,21 @@ class OptimizedExcuseApp(App):
         sm = ScreenManager()
         sm.add_widget(OptimizedHomeScreen(name='home'))
         sm.add_widget(OptimizedExcuseScreen(name='excuse'))
+        Window.bind(on_keyboard=self._handle_back_button)
         return sm
+
+    def _handle_back_button(self, window, key, *args):
+        # 27 is the keycode for Android back button
+        if key == 27:
+            if self.root.current == 'home':
+                # Exit the app on home screen
+                self.stop()
+                return True
+            elif self.root.current == 'excuse':
+                # Go back to home screen
+                self.root.current = 'home'
+                return True
+        return False
 
 if __name__ == "__main__":
     OptimizedExcuseApp().run()
