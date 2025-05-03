@@ -5,10 +5,8 @@ from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
 from kivy.uix.slider import Slider
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, RoundedRectangle
@@ -21,149 +19,162 @@ from kivy.clock import Clock
 import random
 import json
 
-kivy.require('2.1.0')
+kivy.require('2.3.0')
 
-# Platform configuration
+# Platform-specific configuration
 if platform == 'android':
     from android.permissions import request_permissions, Permission
     request_permissions([Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE])
     Window.softinput_mode = 'below_target'
-    FONT_SIZE_MULTIPLIER = 1
+    DEFAULT_FONT_SIZE = sp(18)
 else:
+    DEFAULT_FONT_SIZE = dp(18)
     Window.size = (400, 700)
-    FONT_SIZE_MULTIPLIER = 1
-
-# Dynamic sizing functions
-def scale_font(base_size):
-    return sp(base_size * FONT_SIZE_MULTIPLIER) if platform == 'android' else dp(base_size)
-
-def scale_size(base_size):
-    return dp(base_size * (1 if platform == 'android' else 1))
 
 def load_excuses():
     data_path = os.path.join(os.path.dirname(__file__), 'excuses.json')
-    try:
-        with open(data_path, 'r', encoding='utf-8') as f:
-            return decode_special_chars(json.load(f))
-    except Exception as e:
-        print(f"Error loading excuses: {e}")
-        return {'School/College': {'Low': ['Data not loaded'], 'Medium': [], 'High': []}}
+    with open(data_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return decode_special_chars(data)
 
 def decode_special_chars(data):
-    return {category: {level: [html.unescape(e).replace("’", "'").replace("‘", "'") 
-                           for e in excuses] 
-                   for level, excuses in levels.items()} 
-            for category, levels in data.items()}
+    """Handle special characters and apostrophes"""
+    decoded = {}
+    for category, levels in data.items():
+        decoded[category] = {}
+        for level, excuses in levels.items():
+            decoded[category][level] = [
+                html.unescape(e)
+                .replace("’", "'")
+                .replace("‘", "'")
+                for e in excuses
+            ]
+    return decoded
 
 excuses_data = load_excuses()
 
-class AdaptiveButton(Button):
+class PlatformAwareRoundedButton(Button):
     background_color = ListProperty([0.2, 0.6, 0.8, 1])
-    border_radius = ListProperty([25])
+    border_radius = ListProperty([25 if platform == 'android' else 25])
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.background_normal = self.background_down = ''
+        self.background_normal = ''
+        self.background_down = ''
+        self.background_color = kwargs.get('background_color', [0.2, 0.6, 0.8, 1])
         self.color = [1, 1, 1, 1]
-        self.font_size = scale_font(18)
+        self.font_size = sp(18) if platform == 'android' else dp(18)
         self.bold = True
         self.size_hint_y = None
-        self.height = scale_size(50)
-        self.padding = (scale_size(10), scale_size(5))
+        self.height = dp(45) if platform == 'android' else dp(45)
+        self.padding = (dp(10), dp(10))
         self.font_name = 'Roboto'
-        self.shadow = None
 
     def on_press(self):
-        anim = Animation(background_color=[c*0.7 for c in self.background_color[:3]]+[1], duration=0.1)
-        anim += Animation(background_color=self.background_color, duration=0.2)
+        anim = Animation(background_color=[c * 0.8 for c in self.background_color[:3]] + [1],
+                         duration=0.1)
+        anim += Animation(background_color=self.background_color, duration=0.1)
         anim.start(self)
+        return super().on_press()
 
-class HomeScreen(Screen):
+class OptimizedHomeScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._configure_background()
+        self._setup_ui()
         self.category = "School/College"
         self.sensitivity = 1
-        self._setup_ui()
 
-    def _setup_ui(self):
+    def _configure_background(self):
         with self.canvas.before:
             Color(0.93, 0.96, 1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_background)
-        
-        layout = BoxLayout(orientation='vertical', padding=scale_size(15), spacing=scale_size(15))
-        layout.add_widget(self._create_title())
-        layout.add_widget(self._create_category_selector())
-        layout.add_widget(self._create_sensitivity_control())
-        layout.add_widget(self._create_generate_button())
-        self.add_widget(layout)
 
-    def _create_title(self):
-        return Label(
+    def _setup_ui(self):
+        main_layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        content_layout = self._create_content_layout()
+        main_layout.add_widget(content_layout)
+        self.add_widget(main_layout)
+
+    def _create_content_layout(self):
+        layout = BoxLayout(orientation='vertical', spacing=dp(15))
+        
+        # Title
+        layout.add_widget(Label(
             text="Excuse Generator",
-            font_size=scale_font(24),
+            font_size=sp(28) if platform == 'android' else dp(28),
             bold=True,
             color=[0.2, 0.3, 0.5, 1],
             size_hint_y=None,
-            height=scale_size(50))
+            height=dp(50)))
+        
+        # Category Selection
+        layout.add_widget(self._create_category_selector())
+        # Sensitivity Control
+        layout.add_widget(self._create_sensitivity_control())
+        # Generate Button
+        layout.add_widget(self._create_generate_button())
+        
+        return layout
 
     def _create_category_selector(self):
-        box = BoxLayout(orientation='vertical', spacing=scale_size(8))
+        box = BoxLayout(orientation='vertical', spacing=dp(8))
         box.add_widget(Label(
             text="Select Category:",
-            font_size=scale_font(18),
+            font_size=DEFAULT_FONT_SIZE,
             color=[0.2, 0.3, 0.5, 1],
             size_hint_y=None,
-            height=scale_size(30)))
+            height=dp(30)))
         
-        self.category_btn = AdaptiveButton(
-            text=self.category,
+        self.category_dropdown = DropDown()
+        self.category_button = PlatformAwareRoundedButton(
+            text="School/College",
             background_color=[0.4, 0.6, 0.9, 1])
-        dropdown = DropDown()
+        self.category_button.bind(on_release=self.category_dropdown.open)
+        
         for category in ["School/College", "Work", "Life"]:
-            btn = AdaptiveButton(text=category, background_color=[0.4, 0.6, 0.9, 1])
-            btn.bind(on_release=lambda b: self._update_category(dropdown, b.text))
-            dropdown.add_widget(btn)
-        self.category_btn.bind(on_release=dropdown.open)
-        box.add_widget(self.category_btn)
+            btn = PlatformAwareRoundedButton(
+                text=category,
+                background_color=[0.4, 0.6, 0.9, 1])
+            btn.bind(on_release=lambda b: self._update_category(b.text))
+            self.category_dropdown.add_widget(btn)
+        
+        box.add_widget(self.category_button)
         return box
 
-    def _update_category(self, dropdown, category):
-        self.category_btn.text = self.category = category
-        dropdown.dismiss()
-
     def _create_sensitivity_control(self):
-        box = BoxLayout(orientation='vertical', spacing=scale_size(8))
+        box = BoxLayout(orientation='vertical', spacing=dp(8))
         self.sensitivity_label = Label(
             text="Sensitivity: Medium",
-            font_size=scale_font(18),
+            font_size=DEFAULT_FONT_SIZE,
             color=[0.2, 0.3, 0.5, 1],
             size_hint_y=None,
-            height=scale_size(30))
+            height=dp(30))
         
         self.sensitivity_slider = Slider(
-            min=0, max=2, value=1, step=1,
+            min=0,
+            max=2,
+            value=1,
+            step=1,
             size_hint_y=None,
-            height=scale_size(35))
+            height=dp(30) if platform == 'android' else dp(30))
         self.sensitivity_slider.bind(value=self._update_sensitivity)
+        
         box.add_widget(self.sensitivity_label)
         box.add_widget(self.sensitivity_slider)
         return box
 
-    def _update_sensitivity(self, instance, value):
-        levels = ["Low", "Medium", "High"]
-        self.sensitivity_label.text = f"Sensitivity: {levels[int(value)]}"
-        self.sensitivity = int(value)
-
     def _create_generate_button(self):
-        btn = AdaptiveButton(
+        btn = PlatformAwareRoundedButton(
             text="Generate Excuse",
             background_color=[0.4, 0.7, 0.4, 1],
-            height=scale_size(55))
+            size_hint_y=None,
+            height=dp(45) if platform == 'android' else dp(45))
         
         with btn.canvas.before:
             Color(0, 0, 0, 0.1)
-            btn.shadow = RoundedRectangle(
+            self.shadow = RoundedRectangle(
                 pos=(btn.x-3, btn.y-3),
                 size=(btn.width+6, btn.height+6),
                 radius=[btn.border_radius[0] + 2])
@@ -171,185 +182,205 @@ class HomeScreen(Screen):
         btn.bind(
             pos=self._update_shadow,
             size=self._update_shadow,
-            on_release=lambda x: setattr(self.manager, 'current', 'excuse'))
+            on_release=self._navigate_to_excuse)
         return btn
-
-    def _update_shadow(self, instance, value):
-        instance.shadow.pos = (instance.x-3, instance.y-3)
-        instance.shadow.size = (instance.width+6, instance.height+6)
 
     def _update_background(self, *args):
         self.rect.size = self.size
         self.rect.pos = self.pos
 
-class ExcuseScreen(Screen):
+    def _update_shadow(self, instance, value):
+        self.shadow.pos = (instance.x-3, instance.y-3)
+        self.shadow.size = (instance.width+6, instance.height+6)
+
+    def _update_category(self, category):
+        self.category_button.text = category
+        self.category = category
+        self.category_dropdown.dismiss()
+
+    def _update_sensitivity(self, instance, value):
+        levels = ["Low", "Medium", "High"]
+        self.sensitivity_label.text = f"Sensitivity: {levels[int(value)]}"
+        self.sensitivity = int(value)
+
+    def _navigate_to_excuse(self, instance):
+        anim = Animation(opacity=0.7, duration=0.1)
+        anim += Animation(opacity=1, duration=0.1)
+        anim.start(instance)
+        self.manager.current = 'excuse'
+
+class OptimizedExcuseScreen(Screen):
     excuse_text = StringProperty("Your excuse will appear here")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._configure_background()
         self._setup_ui()
 
-    def _setup_ui(self):
+    def _configure_background(self):
         with self.canvas.before:
             Color(0.1, 0.3, 0.5, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_background)
-        
-        layout = BoxLayout(orientation='vertical', padding=scale_size(15), spacing=scale_size(15))
-        layout.add_widget(self._create_title())
-        layout.add_widget(self._create_settings_display())
-        layout.add_widget(self._create_excuse_card())
-        layout.add_widget(self._create_action_buttons())
-        self.add_widget(layout)
 
-    def _create_title(self):
-        return Label(
+    def _setup_ui(self):
+        main_layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        content = self._create_content()
+        main_layout.add_widget(content)
+        self.add_widget(main_layout)
+
+    def _create_content(self):
+        layout = BoxLayout(orientation='vertical', spacing=dp(15))
+        
+        # Title with fixed height
+        layout.add_widget(Label(
             text="Your Excuse",
-            font_size=scale_font(22),
+            font_size=sp(24) if platform == 'android' else dp(24),
             bold=True,
             color=[1, 1, 1, 1],
             size_hint_y=None,
-            height=scale_size(45))
+            height=dp(45)))
+        
+        # Settings display (new addition)
+        layout.add_widget(self._create_settings_display())
+        
+        # Excuse Card with proportional height
+        layout.add_widget(self._create_excuse_card())
+        
+        # Action Buttons with fixed height
+        layout.add_widget(self._create_action_buttons())
+        
+        return layout
 
     def _create_settings_display(self):
+        # Subtle settings display
         self.settings_label = Label(
             text="",
-            font_size=scale_font(14),
-            color=[1, 1, 1, 0.7],
+            font_size=sp(14) if platform == 'android' else dp(14),
+            color=[1, 1, 1, 0.7],  # Semi-transparent white
             size_hint_y=None,
-            height=scale_size(20))
+            height=dp(20))
         return self.settings_label
 
     def _create_excuse_card(self):
-        card = FloatLayout(size_hint_y=0.6)
+        # Card takes 60% of available vertical space
+        card = BoxLayout(orientation='vertical', size_hint_y=0.6)
         with card.canvas.before:
-            Color(0, 0, 0, 1)
-            self.card_bg = RoundedRectangle(size=card.size, pos=card.pos, radius=[scale_size(15)])
-        card.bind(pos=self._update_card_bg, size=self._update_card_bg)
-
-        self.excuse_input = TextInput(
+            Color(1, 1, 1, 0.2)
+            RoundedRectangle(size=card.size, pos=card.pos, radius=[dp(15)])
+        
+        self.excuse_label = Label(
             text=self.excuse_text,
-            size_hint=(0.9, None),
-            height=scale_size(150),
-            pos_hint={'center_x': 0.5, 'top': 0.7},
-            font_size=scale_font(18),
-            readonly=True,
-            foreground_color=[1, 1, 1, 1],
-            background_color=[0, 0, 0, 1],
-            cursor_color=[1, 1, 1, 0.5],
-            multiline=True,
-            padding=(scale_size(10), scale_size(10)),
+            font_size=sp(20) if platform == 'android' else dp(20),
+            color=[1, 1, 1, 1],
             halign='center',
-            unfocus_on_touch=True
+            valign='middle',
+            text_size=(self.width - dp(20), None),  # Fixed width for text wrapping
+            padding=(dp(10), dp(10)),
+            font_name='Roboto',
+            markup=True
         )
-        self.excuse_input.bind(
-            focus=self._on_focus_change,
-            touch_down=self._schedule_selection_clear
-        )
-        card.add_widget(self.excuse_input)
+        self.excuse_label.bind(size=lambda instance, value: setattr(self.excuse_label, 'text_size', (value[0], None)))
+        card.add_widget(self.excuse_label)
         return card
 
-    def _on_focus_change(self, instance, value):
-        if not value:
-            self._clear_selection()
-
-    def _schedule_selection_clear(self, instance, touch):
-        Clock.schedule_once(lambda dt: self._check_selection_clear(touch), 0)
-
-    def _check_selection_clear(self, touch):
-        if not self.excuse_input.collide_point(*touch.pos):
-            self._clear_selection()
-
-    def _clear_selection(self):
-        self.excuse_input.selection_start = 0
-        self.excuse_input.selection_end = 0
-        if platform == 'android':
-            from kivy.base import EventLoop
-            self.excuse_input._hide_handles(EventLoop.window)
-
     def _create_action_buttons(self):
-        box = BoxLayout(orientation='vertical', spacing=scale_size(10), 
-                      size_hint_y=None, height=scale_size(190))
-        
+        # Fixed height button container
+        box = BoxLayout(
+            orientation='vertical',
+            spacing=dp(10),
+            size_hint_y=None,
+            height=dp(170))  # Fixed total height for buttons
+            
+        # Watermark
         box.add_widget(Label(
             text="developed by Mhmd-Aslam",
-            font_size=scale_font(12),
+            font_size=sp(12) if platform == 'android' else dp(12),
             color=[1, 1, 1, 0.5],
             size_hint_y=None,
-            height=scale_size(20)))
+            height=dp(20)))
         
-        buttons = [
-            ("Copy to Clipboard", [0.5, 0.7, 0.9, 1], self._copy_to_clipboard),
-            ("Try Again", [0.3, 0.5, 0.8, 1], self._generate_new_excuse),
-            ("Main Menu", [0.8, 0.3, 0.3, 1], lambda x: setattr(self.manager, 'current', 'home'))
-        ]
+        # Buttons with fixed heights
+        copy_btn = PlatformAwareRoundedButton(
+            text="Copy to Clipboard",
+            background_color=[0.5, 0.7, 0.9, 1],
+            size_hint_y=None,
+            height=dp(50))
+        copy_btn.bind(on_release=self._copy_to_clipboard)
+        box.add_widget(copy_btn)
         
-        for text, color, callback in buttons:
-            btn = AdaptiveButton(text=text, background_color=color)
-            btn.bind(on_release=callback)
-            box.add_widget(btn)
-            
+        retry_btn = PlatformAwareRoundedButton(
+            text="Try Again",
+            background_color=[0.3, 0.5, 0.8, 1],
+            size_hint_y=None,
+            height=dp(50))
+        retry_btn.bind(on_release=self._generate_new_excuse)
+        box.add_widget(retry_btn)
+        
+        home_btn = PlatformAwareRoundedButton(
+            text="Main Menu",
+            background_color=[0.8, 0.3, 0.3, 1],
+            size_hint_y=None,
+            height=dp(50))
+        home_btn.bind(on_release=self._return_home)
+        box.add_widget(home_btn)
+        
         return box
 
     def _copy_to_clipboard(self, instance):
-        if self.excuse_input.text.strip():
-            Clipboard.copy(self.excuse_input.text)
+        if self.excuse_label.text.strip():
+            Clipboard.copy(self.excuse_label.text)
             original_text = instance.text
-            instance.text, instance.background_color = "Copied!", [0.2, 0.8, 0.2, 1]
-            Clock.schedule_once(lambda dt: self._reset_button(instance, original_text), 1)
+            instance.text = "Copied!"
+            instance.background_color = [0.2, 0.8, 0.2, 1]
+            Clock.schedule_once(
+                lambda dt: self._reset_button(instance, original_text), 1
+            )
         else:
-            instance.text, instance.background_color = "Nothing to copy!", [0.8, 0.2, 0.2, 1]
-            Clock.schedule_once(lambda dt: self._reset_button(instance, "Copy to Clipboard"), 1)
+            instance.text = "Nothing to copy!"
+            instance.background_color = [0.8, 0.2, 0.2, 1]
+            Clock.schedule_once(
+                lambda dt: self._reset_button(instance, "Copy to Clipboard"), 1
+            )
 
     def _reset_button(self, button, text):
-        button.text, button.background_color = text, [0.5, 0.7, 0.9, 1]
+        button.text = text
+        button.background_color = [0.5, 0.7, 0.9, 1]
 
     def _update_background(self, *args):
         self.rect.size = self.size
         self.rect.pos = self.pos
-
-    def _update_card_bg(self, instance, value):
-        self.card_bg.size, self.card_bg.pos = instance.size, instance.pos
 
     def on_enter(self):
         self._generate_new_excuse()
 
     def _generate_new_excuse(self, instance=None):
-        self._clear_selection()
         anim = Animation(opacity=0, duration=0.2)
         anim += Animation(opacity=1, duration=0.2)
-        anim.start(self.excuse_input)
+        anim.start(self.excuse_label)
+        home_screen = self.manager.get_screen('home')
+        category = home_screen.category
+        sensitivity = home_screen.sensitivity
         
-        home = self.manager.get_screen('home')
-        category, sensitivity = home.category, home.sensitivity
         levels = ["Low", "Medium", "High"]
+        level = levels[sensitivity]
         
-        self.settings_label.text = f"Category: {category} | Sensitivity: {levels[sensitivity]}"
-        self.excuse_input.text = random.choice(excuses_data[category][levels[sensitivity]])
+        # Update settings display
+        self.settings_label.text = f"Category: {category} | Sensitivity: {level}"
+        self.excuse_label.text = random.choice(excuses_data[category][level])
 
-class ExcuseApp(App):
+    def _return_home(self, instance):
+        self.manager.current = 'home'
+
+class OptimizedExcuseApp(App):
     def build(self):
         self.title = 'Excuse Generator'
         self.icon = 'assets/applogo.png'
-        self.sm = ScreenManager()
-        self.sm.add_widget(HomeScreen(name='home'))
-        self.sm.add_widget(ExcuseScreen(name='excuse'))
         
-        if platform == 'android':
-            from kivy.base import EventLoop
-            EventLoop.window.bind(on_keyboard=self.on_keyboard)
-            
-        return self.sm
-
-    def on_keyboard(self, window, key, *args):
-        if key == 27:  # Android back button
-            if self.sm.current == 'home':
-                App.get_running_app().stop()
-                return True
-            elif self.sm.current == 'excuse':
-                self.sm.current = 'home'
-                return True
-        return False
+        sm = ScreenManager()
+        sm.add_widget(OptimizedHomeScreen(name='home'))
+        sm.add_widget(OptimizedExcuseScreen(name='excuse'))
+        return sm
 
 if __name__ == "__main__":
-    ExcuseApp().run()
+    OptimizedExcuseApp().run()
