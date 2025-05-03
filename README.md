@@ -8,6 +8,10 @@ A cross-platform application that generates context-aware excuses based on selec
 
 ---
 
+## 📲 Download APK
+
+👉 [Click here to download the APK](https://github.com/Mhmd-Aslam/Excuse-Generator/raw/main/bin/excuseapp-3.2-arm64.apk)
+
 ## 🚀 Features
 
 - 🎓 Three main categories: School/College, Work, Life  
