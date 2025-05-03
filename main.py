@@ -239,7 +239,9 @@ class ExcuseScreen(Screen):
             cursor_color=[1, 1, 1, 0.5],
             multiline=True,
             padding=(scale_size(10), scale_size(10)),
-            halign='center'
+            halign='center',
+            unfocus_on_touch=True,  # Critical fix for selection behavior
+            write_tab=False
         )
         card.add_widget(self.excuse_input)
         return card
@@ -267,6 +269,12 @@ class ExcuseScreen(Screen):
             box.add_widget(btn)
             
         return box
+
+    def on_touch_down(self, touch):
+        # Clear text selection when tapping outside the TextInput
+        if not self.excuse_input.collide_point(*touch.pos):
+            self.excuse_input.focus = False
+        return super().on_touch_down(touch)
 
     def _copy_to_clipboard(self, instance):
         if self.excuse_input.text.strip():
