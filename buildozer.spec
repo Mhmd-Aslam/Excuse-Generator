@@ -25,6 +25,7 @@ osx.kivy_version = 2.1.0
 android.enable_androidx = True
 android.allow_backup = False
 p4a.branch = develop
+android.add_src = ./kivy-options.txt
 android.permissions = 
     READ_EXTERNAL_STORAGE,
     WRITE_EXTERNAL_STORAGE,
