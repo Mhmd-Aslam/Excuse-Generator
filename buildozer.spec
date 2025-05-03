@@ -12,15 +12,20 @@ requirements =
     kivy==2.1.0,
     android,
     pyjnius,
-    openssl
+    openssl,
+    kivy.garden
 
 # Android specific configurations
 android.api = 33
 android.minapi = 21
-android.ndk = 23b
+android.ndk = 25b
 android.archs = arm64-v8a
+osx.python_version = 3
+osx.kivy_version = 2.1.0
+android.enable_androidx = True
+android.allow_backup = False
+p4a.branch = develop
 android.permissions = 
-    INTERNET,
     READ_EXTERNAL_STORAGE,
     WRITE_EXTERNAL_STORAGE,
     VIBRATE
