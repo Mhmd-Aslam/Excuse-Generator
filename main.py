@@ -18,6 +18,7 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
+from kivy.base import EventLoop
 import random
 import json
 
@@ -59,7 +60,7 @@ excuses_data = load_excuses()
 
 class AdaptiveButton(Button):
     background_color = ListProperty([0.2, 0.6, 0.8, 1])
-    border_radius = ListProperty([25 if platform == 'android' else 25])
+    border_radius = ListProperty([25])
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -188,6 +189,7 @@ class ExcuseScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._setup_ui()
+        self.selection_cleanup = None
 
     def _setup_ui(self):
         with self.canvas.before:
@@ -240,11 +242,38 @@ class ExcuseScreen(Screen):
             multiline=True,
             padding=(scale_size(10), scale_size(10)),
             halign='center',
-            unfocus_on_touch=True,  # Critical fix for selection behavior
+            unfocus_on_touch=False,  # We'll handle this manually
             write_tab=False
+        )
+        self.excuse_input.bind(
+            focus=self.on_focus_change,
+            on_touch_down=self.delayed_selection_clear
         )
         card.add_widget(self.excuse_input)
         return card
+
+    def on_focus_change(self, instance, value):
+        if not value:
+            self.clear_selection()
+
+    def delayed_selection_clear(self, instance, touch):
+        if self.selection_cleanup:
+            self.selection_cleanup.cancel()
+        self.selection_cleanup = Clock.schedule_once(lambda dt: self.check_selection_clear(touch), 0.1)
+
+    def check_selection_clear(self, touch):
+        if not self.excuse_input.collide_point(*touch.pos):
+            self.clear_selection()
+
+    def clear_selection(self):
+        # Programmatically clear selection
+        self.excuse_input.selection_start = 0
+        self.excuse_input.selection_end = 0
+        
+        # Force hide handles on Android
+        if platform == 'android':
+            self.excuse_input._hide_handles(EventLoop.window)
+            self.excuse_input._hide_cut_copy_paste(EventLoop.window)
 
     def _create_action_buttons(self):
         box = BoxLayout(orientation='vertical', spacing=scale_size(10), 
@@ -271,9 +300,9 @@ class ExcuseScreen(Screen):
         return box
 
     def on_touch_down(self, touch):
-        # Clear text selection when tapping outside the TextInput
+        # Clear selection when tapping outside
         if not self.excuse_input.collide_point(*touch.pos):
-            self.excuse_input.focus = False
+            self.clear_selection()
         return super().on_touch_down(touch)
 
     def _copy_to_clipboard(self, instance):
@@ -300,6 +329,7 @@ class ExcuseScreen(Screen):
         self._generate_new_excuse()
 
     def _generate_new_excuse(self, instance=None):
+        self.clear_selection()
         anim = Animation(opacity=0, duration=0.2)
         anim += Animation(opacity=1, duration=0.2)
         anim.start(self.excuse_input)
@@ -320,7 +350,6 @@ class ExcuseApp(App):
         self.sm.add_widget(ExcuseScreen(name='excuse'))
         
         if platform == 'android':
-            from kivy.base import EventLoop
             EventLoop.window.bind(on_keyboard=self.on_keyboard)
             
         return self.sm
