@@ -28,7 +28,7 @@ A cross-platform application that generates context-aware excuses based on selec
 
 ### Prerequisites
 - Python 3.7+
-- Kivy 2.1.0
+- Kivy 2.3.0
 - Android Build Tools (for APK generation)
 
 ### Clone the Repository
