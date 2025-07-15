@@ -93,35 +93,27 @@ To edit or add new excuses, modify the `excuses.json` file like so:
 
 ## 🤝 Contributing
 
-1. Fork the project  
-2. Create your feature branch:  
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
-3. Commit your changes:  
-   ```bash
-   git commit -m "Add some AmazingFeature"
-   ```
-4. Push to the branch:  
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
-5. Open a Pull Request  
+We welcome contributions!
+Please open an issue or submit a pull request to help improve this app.
 
 ---
 
+## 📷 Screenshots
+
+<p align="left">
+  <img src="./assets/Ss01.jpg"  width="30%" style="margin-right: 50px;"/>
+  <img src="./assets/Ss02.jpg"  width="30%" style="margin-right: 50px;"/>
+  <img src="./assets/Ss03.jpg"  width="30%"/>
+</p>
+
+
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License.
 
 ---
 
 ## 👨‍💻 Credits
 
-- Developed by **Mhmd-Aslam**  
 - Built with **Kivy**  
 - JSON structure inspired by common excuse patterns
-
----
-
-Made with ❤️ and Python
